@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 from PIL import Image
 import numpy as np
 import ig2nx as nx
