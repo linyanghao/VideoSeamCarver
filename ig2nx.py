@@ -1,5 +1,6 @@
 import igraph as ig 
 
+
 def minimum_cut(G, S_Node, T_Node):
     G = G.G
     S = G.vs.find(S_Node).index
