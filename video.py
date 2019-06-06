@@ -117,10 +117,16 @@ class VideoSeamCarver():
     def _getAffectedPoss(self, t, i, j):
         result = []
         if j+1 < len(self.Pos2Node[t][i]):
-            result.append((i, j+1))
+            result.append((t, i, j+1))
         if j+2 < len(self.Pos2Node[t][i]):
-            result.append((i, j+2))
+            result.append((t, i, j+2))
         return result
+
+    def _flatten(self, seam):
+        '''
+        Flattens a 2-D (In frame and row directions) Seam
+        '''
+        return list(itertools.chain(*seam))
 
     def Solve(self):
         '''根据当前Graph结构，返回最小割'''
@@ -145,28 +151,30 @@ class VideoSeamCarver():
 
     def SolveK(self, k):
         '''根据当前Graph结构，返回前K个最小割'''
-        raise NotImplementedError()
         tempG = deepcopy(self.G)
         seams = []
         for _ in range(k):
+            startTime = time.time()
             cutValue, partition = nx.minimum_cut(tempG, self.S_Node, self.T_Node)
             leftPartition, rightPartition = partition
             leftPartition.remove('S')
-            seam = collections.defaultdict(int)
-
-            for i in range(self.numRows):
-                for j in range(len(self.Pos2Node[i])-1, -1, -1):
-                    if self.Pos2Node[i][j] in leftPartition:
-                        tempG.add_edge(self.Pos2Node[i][j], self.Pos2Node[i][j+1], capacity=float('inf'))
-                        seam[t][i] = (t, i, j)
-                        break
+            seam = [[-1 for i in range(self.numRows)] for t in range(self.numFrames)]
+            for t in range(self.numFrames):
+                for i in range(self.numRows):
+                    for j in range(len(self.Pos2Node[t][i])-1, -1, -1):
+                        if self.Pos2Node[t][i][j] in leftPartition:
+                            tempG.add_edge(self.Pos2Node[t][i][j], self.Pos2Node[t][i][j+1], capacity=float('inf'))
+                            tempG.flush()
+                            seam[t][i] = (t, i, j)
+                            break
             seams.append(seam)
+            print('Solving seam %s/%s: %s seconds'% (_+1, k, time.time()-startTime))
         return seams
     
     def RemoveSeam(self, seam):
         '''削除Seam处的一列像素，并对Graph结构进行更新'''
         addEdgesQueue = []
-        seam = list(itertools.chain(*seam))
+        seam = self._flatten(seam)
         for frame, row, j in seam:
             t = frame
             i = row
@@ -182,6 +190,7 @@ class VideoSeamCarver():
         '''在Seam处填充一列像素，并对Graph结构进行更新'''
         insertNodeQueue = []
         addEdgesQueue = []
+        seam = self._flatten(seam)
         for frame, row, j in seam:
             t = frame
             i = row
@@ -199,7 +208,7 @@ class VideoSeamCarver():
             else: # Pos2Node[i][j] connected with T_Node, this should never happen
                 raise Exception('??')
         for t, i, j, augmentedNode in insertNodeQueue:
-            self.Pos2Node[t][i].insert(j+1, augmentedNode) # Insert Between j and j+1, Node at j+1 changed to augmentedNode
+            self.Pos2Node[t][i].insert(j+1, augmentedNode) # CAUTION: Insertion Between j and j+1, Node at j+1 is now augmentedNode
             addEdgesQueue.append((t, i, j+1))
             for _t, _i, _j in self._getAffectedPoss(t, i, j+1):
                 addEdgesQueue.append((_t, _i, _j))
@@ -229,11 +238,11 @@ class VideoSeamCarver():
         returns numpy array
         '''
         videoWithSeam = self.GenerateVideo()
-        seam = list(itertools.chain(*seam))
+        seam = self._flatten(seam) # Flatten the 2-D array
         for t, i, j in seam:
             videoWithSeam[t][i][j] = self.PALETTE['red']
         return videoWithSeam
-    def GenerateImgWithSeams(self, seams):
+    def GenerateVideoWithSeams(self, seams):
         '''
         根据当前Pos2Node二维数组构造图片
 
@@ -241,6 +250,7 @@ class VideoSeamCarver():
         '''
         videoWithSeams = self.GenerateVideo()
         for seam in seams:
+            seam = self._flatten(seam) # Flatten the 2-D array
             for t, i, j in seam:
                 videoWithSeams[t][i][j] = self.PALETTE['red']
         return videoWithSeams
@@ -264,8 +274,9 @@ class VideoSeamCarver():
         plt.show()
 
 if __name__ == '__main__':
-    IMAGE_AS_VIDEO, SMALL_DATA, REMOVE_SEAM_TEST, AUGMENT_SEAM_TEST = True, False, True, False
+    IMAGE_AS_VIDEO, SMALL_DATA, REMOVE_SEAM_TEST, AUGMENT_SEAM_TEST = True, False, False, True
     REMOVE_SEAMS_COUNT = 40
+    AUGMENT_SEAMS_COUNT = 10
     
     if IMAGE_AS_VIDEO:
         img = Image.open('2.png')
@@ -302,14 +313,12 @@ if __name__ == '__main__':
         #carver.ShowImg(None)
 
     if AUGMENT_SEAM_TEST: # 测试增加图片宽度的功能
-        seams = carver.SolveK(20)
-        imgWithSeams = carver.GenerateImgWithSeams(seams)
-        plt.imshow(imgWithSeams)
-        plt.show()
+        seams = carver.SolveK(AUGMENT_SEAMS_COUNT)
+        videoWithSeams = carver.GenerateVideoWithSeams(seams)
+        imageio.mimsave(OUT_FOLDER+'/videoWithSeams.gif', videoWithSeams)
 
         for seam in seams:
             carver.AugmentSeam(seam)
-        imgResult = carver.GenerateVideo()
+        videoAugmented = carver.GenerateVideo()
         
-        plt.imshow(imgResult)
-        plt.show()
+        imageio.mimsave(OUT_FOLDER+'/videoAugmented.gif', videoAugmented)
