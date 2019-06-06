@@ -8,8 +8,11 @@ import collections
 from copy import deepcopy
 import imageio
 import time
+import os
 
-
+OUT_FOLDER = './out'
+if not os.path.exists(OUT_FOLDER):
+    os.mkdir(OUT_FOLDER)
 
 def L1Norm(pixel1, pixel2):
     return sum( (I1-I2 if I1>I2 else I2-I1) for I1, I2 in zip(pixel1, pixel2)) 
@@ -219,7 +222,7 @@ class VideoSeamCarver():
         nx.draw_networkx_labels(self.G, pos=pos)
         plt.show()
 
-    def GenerateVideoWithSeam(self, seam, numCols):
+    def GenerateVideoWithSeam(self, seam):
         '''
         根据当前Pos2Node二维数组构造图片
 
@@ -261,7 +264,7 @@ class VideoSeamCarver():
         plt.show()
 
 if __name__ == '__main__':
-    IMAGE_AS_VIDEO, SMALL_DATA, REMOVE_SEAM_TEST, AUGMENT_SEAM_TEST = False, False, True, False
+    IMAGE_AS_VIDEO, SMALL_DATA, REMOVE_SEAM_TEST, AUGMENT_SEAM_TEST = True, False, True, False
     REMOVE_SEAMS_COUNT = 40
     
     if IMAGE_AS_VIDEO:
@@ -288,13 +291,13 @@ if __name__ == '__main__':
             print(i)
             seam = carver.Solve()
             #carver.ShowImg(seam)
-            video = carver.GenerateVideoWithSeam(seam, carver.numCols+20)
-            imageio.mimsave('video/%s.gif'% i, video)
+            video = carver.GenerateVideoWithSeam(seam)
+            imageio.mimsave(OUT_FOLDER+'/%s.gif'% i, video)
             videos.append(video)
             carver.RemoveSeam(seam)
             print('Total Time Removing Seam %s/%s: %s seconds'% (i, REMOVE_SEAMS_COUNT, time.time()-startTime))
         video = carver.GenerateVideo()
-        imageio.mimsave('video/result.gif', video)
+        imageio.mimsave(OUT_FOLDER+'/result.gif', video)
         
         #carver.ShowImg(None)
 
