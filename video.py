@@ -10,6 +10,7 @@ import imageio
 import time
 
 
+
 def L1Norm(pixel1, pixel2):
     return sum( (I1-I2 if I1>I2 else I2-I1) for I1, I2 in zip(pixel1, pixel2)) 
     
