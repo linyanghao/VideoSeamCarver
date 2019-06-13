@@ -282,6 +282,7 @@ class VideoSeamCarver():
                         for row in frame]
                         for frame in self.Pos2Node])
         return video
+
     def ShowImg(self, seam, numCols):
         raise NotImplementedError()
         imgWithSeam = self.GenerateImgWithSeam(seam, numCols)
@@ -300,19 +301,20 @@ class VideoSeamCarver():
             if save_hist:
                 video_w_seam = self.GenerateVideoWithSeam(seam)
                 imageio.mimsave(OUT_FOLDER+'/%s.gif' % i, video_w_seam)
-            # videos.append(video_w_seam)
+                # videos.append(video_w_seam)
             
             self.RemoveSeam(seam)
             print('Total Time Removing Seam %s/%s: %s seconds' % (i, rm_count, time.time()-startTime))
 
-        shrinked_video = self.GenerateVideo()
+        videoAugmented = self.GenerateVideo()
         # Save the final image
-        imageio.mimsave(OUT_FOLDER+'/result.gif', shrinked_video)
-        return shrinked_video
+        imageio.mimsave(OUT_FOLDER+'/result.gif', videoAugmented)
+        return videoAugmented
 
     # Horizontal augmentation
     def augment_hor(self, aug_count, save_hist=False):
-        seams = self.SolveK(AUGMENT_SEAMS_COUNT)
+        seams = self.SolveK(aug_count)
+
         if save_hist:
             videoWithSeams = self.GenerateVideoWithSeams(seams)
             imageio.mimsave(OUT_FOLDER+'/videoWithSeams.gif', videoWithSeams)
@@ -323,19 +325,29 @@ class VideoSeamCarver():
         videoAugmented = self.GenerateVideo()
         imageio.mimsave(OUT_FOLDER+'/videoAugmented.gif', videoAugmented)
         return videoAugmented
+        
+    def scale_hor(self, pix_count, save_hist=False):
+        if pix_count == 0:
+            raise ValueError("VideoSeamCarver::scale_hor does not take pix_count=0") 
+        
+        if pix_count < 0:
+            return self.shrink_hor(-pix_count, save_hist)
+        elif pix_count > 0:
+            return self.augment_hor(pix_count, save_hist)
+    
 
 if __name__ == '__main__':
     IMAGE_AS_VIDEO, SMALL_DATA = True, False
 
     REMOVE_SEAM_TEST  = False
-    AUGMENT_SEAM_TEST = True
-    XY_SCALE_TEST     = False
+    AUGMENT_SEAM_TEST = False
+    XY_SCALE_TEST     = True
 
     assert XY_SCALE_TEST + REMOVE_SEAM_TEST + AUGMENT_SEAM_TEST == 1, "Wrong setting!"
 
     REMOVE_SEAMS_COUNT  = 1
     AUGMENT_SEAMS_COUNT = 2
-    X_SEAMS_COUNT       = 30
+    X_SEAMS_COUNT       = 20
     Y_SEAMS_COUNT       = -13
     
     if IMAGE_AS_VIDEO:
@@ -369,4 +381,16 @@ if __name__ == '__main__':
        )
 
     if XY_SCALE_TEST:
-        raise NotImplementedError()
+        print("=========== XY_SCALE_TEST ==============\n")
+        print("=========== {} =========".format(
+            "Shrink X" if X_SEAMS_COUNT < 0 else "Augment X"
+        ))
+        x_scaled_video = carver.scale_hor(X_SEAMS_COUNT, save_hist=True)
+        x_scaled_trans = np.transpose(x_scaled_video, (0,2,1,3))
+
+        print("=========== {} =========".format(
+            "Shrink Y" if Y_SEAMS_COUNT < 0 else "Augment Y"
+        ))
+        y_scaler = VideoSeamCarver(x_scaled_trans)
+        res = y_scaler.scale_hor(Y_SEAMS_COUNT, save_hist=True)
+
