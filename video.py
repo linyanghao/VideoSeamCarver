@@ -94,10 +94,10 @@ class VideoSeamCarver():
         if upwardNode is not None:
             energy = self.Energy(self.Node2Img(upwardNode), self.Node2Img(currentNode))
             self.G.add_edge(upwardNode, currentNode, 
-                    capacity=-energy)
+                    capacity=-energy
             )
             self.G.add_edge(currentNode, upwardNode, 
-                    capacity=energy)
+                    capacity=energy
             )
         
         for diagonalNode in self._getDiagonalNodes(t, i, j):
@@ -144,9 +144,21 @@ class VideoSeamCarver():
             if t > 0                 : result.append(self.Pos2Node[t-1][i][j-1])
             if t < self.numFrames - 1: result.append(self.Pos2Node[t+1][i][j-1])
         return result
-        
-    def _getAffectedPoss(self, t, i, j):
+    
+
+    def _getAffectedPoss_beforeInsertion(self, t, i, j):
         result = []
+        result.append((t, i, j)) #这是加入垂直方向的边以后才需要的
+        if j+1 < len(self.Pos2Node[t][i]):
+            result.append((t, i, j+1))
+        if j+2 < len(self.Pos2Node[t][i]):
+            result.append((t, i, j+2))
+        return result
+    
+    def _getAffectedPoss_afterInsertion(self, t, i, j):
+        result = []
+        if j-1 >= 0: #这是加入垂直方向的边以后才需要的
+            result.append((t, i, j-1))
         if j+1 < len(self.Pos2Node[t][i]):
             result.append((t, i, j+1))
         if j+2 < len(self.Pos2Node[t][i]):
@@ -205,18 +217,25 @@ class VideoSeamCarver():
     
     def RemoveSeam(self, seam):
         '''削除Seam处的一列像素，并对Graph结构进行更新'''
+        removeNodeQueue = []
         addEdgesQueue = []
         seam = self._flatten(seam)
         for frame, row, j in seam:
             t = frame
             i = row
-            node = self.Pos2Node[frame][row].pop(j)
+
+            for _t, _i, _j in self._getAffectedPoss_afterInsertion(t, i, j):
+                self._removeEdges(_t, _i, _j) 
+            removeNodeQueue.append((t, i, j))
+        
+        for t, i, j in removeNodeQueue:
+            node = self.Pos2Node[t][i].pop(j)
+            for _t, _i, _j in self._getAffectedPoss_beforeInsertion(t, i, j-1):
+                addEdgesQueue.append((_t, _i, _j))
 
             # Remove from Pos2Node and G, the seam node in row i. Then Pos2Node[i][j] becomes Pos2Node[i][j+1]
             self.G.remove_node( node ) 
 
-            if j < len(self.Pos2Node[t][i]): # if Pos2Node[i][j+1] not out of bound
-                addEdgesQueue.append((t, i, j))
         for t, i, j in addEdgesQueue:
             self._addEdges(t, i, j) 
         self.G.flush()
@@ -236,7 +255,7 @@ class VideoSeamCarver():
                 self.Node2Pixel.setValue(augmentedNode, augmentation)
                 self.G.add_node(augmentedNode)
                 
-                for _t, _i, _j in self._getAffectedPoss(t, i, j):
+                for _t, _i, _j in self._getAffectedPoss_beforeInsertion(t, i, j):
                     self._removeEdges(_t, _i, _j) 
                 insertNodeQueue.append((t, i, j, augmentedNode))
                 
@@ -245,7 +264,7 @@ class VideoSeamCarver():
         for t, i, j, augmentedNode in insertNodeQueue:
             self.Pos2Node[t][i].insert(j+1, augmentedNode) # CAUTION: Insertion Between j and j+1, Node at j+1 is now augmentedNode
             addEdgesQueue.append((t, i, j+1))
-            for _t, _i, _j in self._getAffectedPoss(t, i, j+1):
+            for _t, _i, _j in self._getAffectedPoss_afterInsertion(t, i, j+1):
                 addEdgesQueue.append((_t, _i, _j))
         for t, i, j in addEdgesQueue:
             self._addEdges(t, i, j) 
@@ -333,7 +352,7 @@ class VideoSeamCarver():
         return videoAugmented
 
     # Horizontal augmentation
-    def augment_hor(self, aug_count, save_hist=False):
+    def augment_hor(self, aug_count, save_hist=True):
         seams = self.SolveK(aug_count)
 
         if save_hist:
@@ -360,14 +379,14 @@ class VideoSeamCarver():
 if __name__ == '__main__':
     IMAGE_AS_VIDEO, SMALL_DATA = True, False
 
-    REMOVE_SEAM_TEST  = False
+    REMOVE_SEAM_TEST  = True
     AUGMENT_SEAM_TEST = False
-    XY_SCALE_TEST     = True
+    XY_SCALE_TEST     = False
 
     assert XY_SCALE_TEST + REMOVE_SEAM_TEST + AUGMENT_SEAM_TEST == 1, "Wrong setting!"
 
-    REMOVE_SEAMS_COUNT  = 1
-    AUGMENT_SEAMS_COUNT = 2
+    REMOVE_SEAMS_COUNT  = 5
+    AUGMENT_SEAMS_COUNT = 40
     X_SEAMS_COUNT       = 20
     Y_SEAMS_COUNT       = -13
     
