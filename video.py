@@ -359,7 +359,7 @@ class VideoSeamCarver():
         return videoAugmented
 
     # Horizontal augmentation
-    def augment_hor(self, aug_count, save_hist=True):
+    def augment_hor(self, aug_count, save_hist=False):
         seams = self.SolveK(aug_count)
 
         if save_hist:
@@ -387,15 +387,15 @@ if __name__ == '__main__':
     IMAGE_AS_VIDEO, SMALL_DATA = True, False
 
     REMOVE_SEAM_TEST  = False
-    AUGMENT_SEAM_TEST = True
-    XY_SCALE_TEST     = False
+    AUGMENT_SEAM_TEST = False
+    XY_SCALE_TEST     = True
 
     assert XY_SCALE_TEST + REMOVE_SEAM_TEST + AUGMENT_SEAM_TEST == 1, "Wrong setting!"
 
     REMOVE_SEAMS_COUNT  = 40
     AUGMENT_SEAMS_COUNT = 40
-    X_SEAMS_COUNT       = 20
-    Y_SEAMS_COUNT       = -13
+    X_SEAMS_COUNT       = 60
+    Y_SEAMS_COUNT       = 60
     
     if IMAGE_AS_VIDEO:
         img   = Image.open('2.png')
@@ -404,25 +404,25 @@ if __name__ == '__main__':
         video = np.reshape(img, [1, *img.shape])
         print(video.shape)
     else:
-        video = imageio.get_reader('golf.mov', 'ffmpeg')
+        video = imageio.get_reader('waterski_low_resolution.mov', 'ffmpeg')
         frames = []
         for i, frame in enumerate(video):
             frames.append(frame)
         video = np.array(frames)
 
     if SMALL_DATA:
-        video = video[:10, ...]
+        video = video[:3, ...]
     carver = VideoSeamCarver(video)
     #carver.Draw()
 
     if REMOVE_SEAM_TEST: # 测试减少图片宽度的功能
-       res = carver.shrink_hor(REMOVE_SEAMS_COUNT)
+       res = carver.shrink_hor(REMOVE_SEAMS_COUNT, save_hist=True)
        assert res.shape[2] == video.shape[2] - REMOVE_SEAMS_COUNT, "{} is not {}".format(
            res.shape[2], video.shape[2] - REMOVE_SEAMS_COUNT
        )
 
     if AUGMENT_SEAM_TEST: # 测试增加图片宽度的功能
-       res = carver.augment_hor(AUGMENT_SEAMS_COUNT)
+       res = carver.augment_hor(AUGMENT_SEAMS_COUNT, save_hist=True)
        assert res.shape[2] == video.shape[2] + AUGMENT_SEAMS_COUNT, "{} is not {}".format(
            res.shape[2], video.shape[2] + AUGMENT_SEAMS_COUNT
        )
@@ -440,4 +440,5 @@ if __name__ == '__main__':
         ))
         y_scaler = VideoSeamCarver(x_scaled_trans)
         res = y_scaler.scale_hor(Y_SEAMS_COUNT, save_hist=True)
+        res = np.transpose(res, (0,2,1,3))
 
