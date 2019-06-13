@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 from PIL import Image
 import numpy as np
 import ig2nx as nx
@@ -35,34 +37,37 @@ class VideoWrapper():
     
 class VideoSeamCarver():
     # Node 和 img 有一一对应关系
-    # Pos 是删除Seam后Node的位置
+    # Pos是删除Seam后Node的位置
     def __init__(self, img, mode='vertical'):
-        self.img = VideoWrapper(img)
+        self.img       = VideoWrapper(img)
         self.numFrames = img.shape[0]
-        self.numRows = img.shape[1]
-        self.numCols = img.shape[2]
-        self.Pos2Node = [[[(t, i, j) for j in range(self.numCols)] for i in range(self.numRows)] for t in range(self.numFrames)]
-        self.Energy = L1Norm
-        self.Node2Img = lambda node: self.img.getValue(node) # returns pixel value
-        self.Pos2Img = lambda t, i, j: self.Node2Img(self.Pos2Node[t][i][j]) # returns pixel value
+        self.numRows   = img.shape[1]
+        self.numCols   = img.shape[2]
+        self.Pos2Node  = [[[(t, i, j) for j in range(self.numCols)]     \
+                                        for i in range(self.numRows)]   \
+                                        for t in range(self.numFrames)]
+        self.Energy    = L1Norm
+        self.Node2Img  = lambda node: self.img.getValue(node) # returns pixel value
+        self.Pos2Img   = lambda t, i, j: self.Node2Img(self.Pos2Node[t][i][j]) # returns pixel value
         self._initializeGraph()
         self.PALETTE = {
-            'black': np.asarray([0, 0, 0], np.uint8), 
-            'red': np.asarray([255, 0, 0], np.uint8)
+            'black': np.asarray([0, 0, 0], np.uint8),
+            'red'  : np.asarray([255, 0, 0], np.uint8)
         }
 
     def _initializeGraph(self):
         startTime = time.time()
-        self.G = nx.DiGraph()
+
+        self.G      = nx.DiGraph()
         self.S_Node = 'S'
         self.T_Node = 'T'
         self.G.add_nodes_from([self.S_Node, self.T_Node])
+
         for j in range(self.numCols):
             for t in range(self.numFrames):
                 for i in range(self.numRows):
                     currentNode = self.Pos2Node[t][i][j]
                     self.G.add_node(currentNode)
-
                     self._addEdges(t, i, j)
         self.G.flush()
         print('Graph Initialization took %s seconds' % (time.time()-startTime))
@@ -80,11 +85,14 @@ class VideoSeamCarver():
 
         backwardNode = self._getBackwardNode(t, i, j)
         if backwardNode is not None:
-            self.G.add_edge(backwardNode, currentNode, capacity=self.Energy(self.Node2Img(backwardNode), self.Node2Img(currentNode)))
+            self.G.add_edge(backwardNode, currentNode, 
+                    capacity=self.Energy(self.Node2Img(backwardNode), self.Node2Img(currentNode))
+            )
             self.G.add_edge(currentNode, backwardNode, capacity=float('inf'))
         
         for diagonalNode in self._getDiagonalNodes(t, i, j):
             self.G.add_edge(currentNode, diagonalNode, capacity=float('inf'))
+
     def _removeEdges(self, t, i, j):
         currentNode = self.Pos2Node[t][i][j]
 
@@ -106,14 +114,16 @@ class VideoSeamCarver():
             return self.Pos2Node[t][i][j-1]
         else:
             return None
+
     def _getDiagonalNodes(self, t, i, j):
         result = []
         if j > 0:
-            if i > 0: result.append(self.Pos2Node[t][i-1][j-1])
-            if i < self.numRows - 1: result.append(self.Pos2Node[t][i+1][j-1])
-            if t > 0: result.append(self.Pos2Node[t-1][i][j-1])
+            if i > 0                 : result.append(self.Pos2Node[t][i-1][j-1])
+            if i < self.numRows - 1  : result.append(self.Pos2Node[t][i+1][j-1])
+            if t > 0                 : result.append(self.Pos2Node[t-1][i][j-1])
             if t < self.numFrames - 1: result.append(self.Pos2Node[t+1][i][j-1])
         return result
+        
     def _getAffectedPoss(self, t, i, j):
         result = []
         if j+1 < len(self.Pos2Node[t][i]):
@@ -163,7 +173,8 @@ class VideoSeamCarver():
                 for i in range(self.numRows):
                     for j in range(len(self.Pos2Node[t][i])-1, -1, -1):
                         if self.Pos2Node[t][i][j] in leftPartition:
-                            tempG.add_edge(self.Pos2Node[t][i][j], self.Pos2Node[t][i][j+1], capacity=float('inf'))
+                            tempG.add_edge(self.Pos2Node[t][i][j], self.Pos2Node[t][i][j+1], 
+                                           capacity=float('inf'))
                             tempG.flush()
                             seam[t][i] = (t, i, j)
                             break
@@ -179,7 +190,10 @@ class VideoSeamCarver():
             t = frame
             i = row
             node = self.Pos2Node[frame][row].pop(j)
-            self.G.remove_node( node ) # Remove from Pos2Node and G, the seam node in row i. Then Pos2Node[i][j] becomes Pos2Node[i][j+1]
+
+            # Remove from Pos2Node and G, the seam node in row i. Then Pos2Node[i][j] becomes Pos2Node[i][j+1]
+            self.G.remove_node( node ) 
+
             if j < len(self.Pos2Node[t][i]): # if Pos2Node[i][j+1] not out of bound
                 addEdgesQueue.append((t, i, j))
         for t, i, j in addEdgesQueue:
@@ -196,7 +210,7 @@ class VideoSeamCarver():
             i = row
             
             if j+1 < len(self.Pos2Node[t][i]): # if Pos2Node[i][j+1] not out of bound
-                augmentation = ( self.Pos2Img(t, i, j)/2 + self.Pos2Img(t, i, j+1)/2 ).astype('uint8') # Averaging
+                augmentation  = (self.Pos2Img(t, i, j)/2 + self.Pos2Img(t, i, j+1)/2 ).astype('uint8') # Averaging
                 augmentedNode = (self.Pos2Node[t][i][j], self.Pos2Node[t][i][j+1])
                 self.img.setValue(augmentedNode, augmentation)
                 self.G.add_node(augmentedNode)
@@ -216,12 +230,13 @@ class VideoSeamCarver():
             self._addEdges(t, i, j) 
         
         self.G.flush()
-            
 
     def ShowGraph(self):
         raise NotImplementedError()
         '''展示Graph结构'''
-        pos = {self.Pos2Node[i][j]:(i, j) for j in range(len(self.Pos2Node[i])) for i in range(self.numRows)}
+        pos = {self.Pos2Node[i][j]:(i, j) for j in range(len(self.Pos2Node[i]))  \
+                                           for i in range(self.numRows)          \
+                                                }
         pos['S'] = (0, -1)
         pos['T'] = (0, len(self.Pos2Node[0]))
         labels = nx.get_edge_attributes(self.G, 'capacity')
@@ -238,10 +253,11 @@ class VideoSeamCarver():
         returns numpy array
         '''
         videoWithSeam = self.GenerateVideo()
-        seam = self._flatten(seam) # Flatten the 2-D array
+        seam          = self._flatten(seam) # Flatten the 2-D array
         for t, i, j in seam:
             videoWithSeam[t][i][j] = self.PALETTE['red']
         return videoWithSeam
+
     def GenerateVideoWithSeams(self, seams):
         '''
         根据当前Pos2Node二维数组构造图片
@@ -254,14 +270,14 @@ class VideoSeamCarver():
             for t, i, j in seam:
                 videoWithSeams[t][i][j] = self.PALETTE['red']
         return videoWithSeams
+
     def GenerateVideo(self):
         '''
         根据当前Pos2Node二维数组构造图片
         
         returns numpy array
         '''
-        video = np.asarray([[
-                            [self.Node2Img(node)
+        video = np.asarray([[[self.Node2Img(node)
                             for node in row]
                         for row in frame]
                         for frame in self.Pos2Node])
@@ -276,12 +292,12 @@ class VideoSeamCarver():
 if __name__ == '__main__':
     IMAGE_AS_VIDEO, SMALL_DATA, REMOVE_SEAM_TEST, AUGMENT_SEAM_TEST = True, False, False, True
     REMOVE_SEAMS_COUNT = 40
-    AUGMENT_SEAMS_COUNT = 10
+    AUGMENT_SEAMS_COUNT = 40
     
     if IMAGE_AS_VIDEO:
-        img = Image.open('2.png')
-        img = img.convert('RGB')
-        img = np.array(img)
+        img   = Image.open('2.png')
+        img   = img.convert('RGB')
+        img   = np.array(img)
         video = np.reshape(img, [1, *img.shape])
     else:
         video = imageio.get_reader('golf.mov', 'ffmpeg')
@@ -298,9 +314,9 @@ if __name__ == '__main__':
     if REMOVE_SEAM_TEST: # 测试减少图片宽度的功能
         videos = []
         for i in range(REMOVE_SEAMS_COUNT):
-            startTime = time.time()
             print(i)
-            seam = carver.Solve()
+            startTime = time.time()
+            seam      = carver.Solve()
             #carver.ShowImg(seam)
             video = carver.GenerateVideoWithSeam(seam)
             imageio.mimsave(OUT_FOLDER+'/%s.gif'% i, video)
@@ -313,7 +329,7 @@ if __name__ == '__main__':
         #carver.ShowImg(None)
 
     if AUGMENT_SEAM_TEST: # 测试增加图片宽度的功能
-        seams = carver.SolveK(AUGMENT_SEAMS_COUNT)
+        seams          = carver.SolveK(AUGMENT_SEAMS_COUNT)
         videoWithSeams = carver.GenerateVideoWithSeams(seams)
         imageio.mimsave(OUT_FOLDER+'/videoWithSeams.gif', videoWithSeams)
 
