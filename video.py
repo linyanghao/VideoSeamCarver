@@ -289,8 +289,8 @@ class VideoSeamCarver():
         plt.imshow(imgWithSeam)
         plt.show()
 
-    def shrink_hor(self, rm_cournt):
-        videos = []
+    def shrink_hor(self, rm_cournt, save_hist=False):
+        # videos = []
         for i in range(rm_cournt):
             print(i)
             startTime = time.time()
@@ -298,8 +298,10 @@ class VideoSeamCarver():
             video = self.GenerateVideoWithSeam(seam)
 
             # Image with removed seam highlighted
-            imageio.mimsave(OUT_FOLDER+'/%s.gif'% i, video)
-            videos.append(video)
+            if save_hist:
+                imageio.mimsave(OUT_FOLDER+'/%s.gif'% i, video)
+            # videos.append(video)
+            
             self.RemoveSeam(seam)
             print('Total Time Removing Seam %s/%s: %s seconds' % (i, rm_cournt, time.time()-startTime))
         video = self.GenerateVideo()
