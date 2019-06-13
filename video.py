@@ -39,7 +39,7 @@ class VideoSeamCarver():
     # Node 和 img 有一一对应关系
     # Pos是删除Seam后Node的位置
     def __init__(self, img, mode='vertical'):
-        self.img       = VideoWrapper(img)
+        self.Node2Pixel       = VideoWrapper(img)
         self.numFrames = img.shape[0]
         self.numRows   = img.shape[1]
         self.numCols   = img.shape[2]
@@ -47,7 +47,7 @@ class VideoSeamCarver():
                                         for i in range(self.numRows)]   \
                                         for t in range(self.numFrames)]
         self.Energy    = L1Norm
-        self.Node2Img  = lambda node: self.img.getValue(node) # returns pixel value
+        self.Node2Img  = lambda node: self.Node2Pixel.getValue(node) # returns pixel value
         self.Pos2Img   = lambda t, i, j: self.Node2Img(self.Pos2Node[t][i][j]) # returns pixel value
         self._initializeGraph()
         self.PALETTE = {
@@ -212,7 +212,7 @@ class VideoSeamCarver():
             if j+1 < len(self.Pos2Node[t][i]): # if Pos2Node[i][j+1] not out of bound
                 augmentation  = (self.Pos2Img(t, i, j)/2 + self.Pos2Img(t, i, j+1)/2 ).astype('uint8') # Averaging
                 augmentedNode = (self.Pos2Node[t][i][j], self.Pos2Node[t][i][j+1])
-                self.img.setValue(augmentedNode, augmentation)
+                self.Node2Pixel.setValue(augmentedNode, augmentation)
                 self.G.add_node(augmentedNode)
                 
                 for _t, _i, _j in self._getAffectedPoss(t, i, j):
