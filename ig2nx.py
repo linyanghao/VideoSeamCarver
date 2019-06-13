@@ -77,6 +77,8 @@ class DiGraph():
             capacity = 9999
         else:
             capacity = int(capacity)
+        if capacity < 0:
+            u, v = v, u
         if self.BUFFER_MODE:
             self.add_edge_queue.append( (u, v, capacity) )
         else:
@@ -85,7 +87,12 @@ class DiGraph():
     def remove_edge(self, u, v):
         u, v = str(u), str(v)
         index_u, index_v = self.G.vs.find(u).index, self.G.vs.find(v).index
-        edgeID = self.G.get_eid(index_u, index_v, directed=True)
+        try:
+            edgeID = self.G.get_eid(index_u, index_v, directed=True)
+        except: # Negative weight
+            edgeID = self.G.get_eid(index_v, index_u, directed=True)
+            if not self.es[edgeID]['capacity'] < 0:
+                raise Exception()
         if self.BUFFER_MODE:
             self.remove_edge_queue.append(edgeID)
         else:
