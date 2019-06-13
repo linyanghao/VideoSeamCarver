@@ -187,6 +187,7 @@ class VideoSeamCarver():
         startTime = time.time()
         cutValue, partition = nx.minimum_cut(self.G, self.S_Node, self.T_Node)
         print('Solving Minimum Cut: %s seconds' % (time.time()-startTime) )
+        print('CutValue: %s' % (cutValue))
         leftPartition, rightPartition = partition
         leftPartition.remove('S')
         seam = [[-1 for i in range(self.numRows)] for t in range(self.numFrames)]

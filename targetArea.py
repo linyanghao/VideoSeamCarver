@@ -6,23 +6,17 @@ class Indicator():
         return False
     
 class SquareIndicator(Indicator):
-    def __init__(self, ux, uy, bx, by):
+    def __init__(self, irange_lo, irange_hi, jrange_lo, jrange_hi):
         # if ux >= bx or uy <= by:
         #     raise KeyError("Wrong rectangle!")
 
-        self.ux = ux
-        self.uy = uy
-        self.bx = bx
-        self.by = by
+        self.irange_lo, self.irange_hi, self.jrange_lo, self.jrange_hi = \
+            irange_lo, irange_hi, jrange_lo, jrange_hi
 
 
-    def isInTarget(self, target_x, target_y):
-        maxx = max(self.ux, self.bx)
-        minx = min(self.ux, self.bx)
-        maxy = max(self.uy, self.by)
-        miny = min(self.uy, self.by)
-        return minx < target_x and target_x < maxx \
-            and maxy > target_y and target_y > miny
+    def isInTarget(self, target_i, target_j):
+        return self.irange_lo < target_i and target_i < self.irange_hi \
+            and self.jrange_hi > target_j and target_j > self.jrange_lo
 
 class ContentRemover(VideoSeamCarver):
 
@@ -33,8 +27,9 @@ class ContentRemover(VideoSeamCarver):
     def _energy(self, t, i, j): 
         # print("here")
         old_e = super()._energy(t, i, j)
-
-        return old_e if not self.indicator.isInTarget(i, j) else -1000
+        # if self.indicator.isInTarget(i, j):
+        #     print("{}, {}".format(i,j))
+        return 50000+old_e if not self.indicator.isInTarget(i, j) else 50000-1000*old_e
 
 if __name__ == '__main__':
     IMAGE_AS_VIDEO, SMALL_DATA = True, False
@@ -46,7 +41,7 @@ if __name__ == '__main__':
     assert XY_SCALE_TEST + REMOVE_SEAM_TEST + AUGMENT_SEAM_TEST == 1, "Wrong setting!"
 
     # REMOVE_SEAMS_COUNT  = 40
-    AUGMENT_SEAMS_COUNT = 40
+    AUGMENT_SEAMS_COUNT = 20
     X_SEAMS_COUNT       = 20
     Y_SEAMS_COUNT       = -13
     
@@ -72,13 +67,13 @@ if __name__ == '__main__':
 
     if REMOVE_SEAM_TEST: # 测试减少图片宽度的功能
 
-        REMOVE_SEAMS_COUNT = 20
+        REMOVE_SEAMS_COUNT = 80
 
 
         print("=========== REMOVE_SEAM_TEST ==============\n")
 
         carver = ContentRemover(video,  \
-                                indicator=SquareIndicator(131, 217, 166, 257))
+                                indicator=SquareIndicator(131, 166, 217, 257)) # (131, 166, 217, 257)
         res = carver.shrink_hor(REMOVE_SEAMS_COUNT, save_hist=True, want_trans=False)
         
         # assert res.shape[2] == video.shape[2] - REMOVE_SEAMS_COUNT, "{} is not {}".format(
@@ -94,5 +89,4 @@ if __name__ == '__main__':
 
         # stretch = VideoSeamCarver(res)
         # stretch.augment_hor(REMOVE_SEAMS_COUNT, save_hist=True, want_trans=False)
-
 

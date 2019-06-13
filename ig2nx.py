@@ -74,7 +74,7 @@ class DiGraph():
         u, v = str(u), str(v)
         
         if capacity == float('inf'):
-            capacity = 9999
+            capacity = 9999999
         else:
             capacity = int(capacity)
         if self.BUFFER_MODE:
