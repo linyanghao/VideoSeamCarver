@@ -46,7 +46,6 @@ class VideoSeamCarver():
         self.Pos2Node  = [[[(t, i, j) for j in range(self.numCols)]     \
                                         for i in range(self.numRows)]   \
                                         for t in range(self.numFrames)]
-        self.Energy    = L1Norm
         self.Node2Img  = lambda node: self.Node2Pixel.getValue(node) # returns pixel value
         self.Pos2Img   = lambda t, i, j: self.Node2Img(self.Pos2Node[t][i][j]) # returns pixel value
         self._initializeGraph()
@@ -86,20 +85,20 @@ class VideoSeamCarver():
         backwardNode = self._getBackwardNode(t, i, j)
         if backwardNode is not None:
             self.G.add_edge(backwardNode, currentNode, 
-                    capacity=self.Energy(self.Node2Img(backwardNode), self.Node2Img(currentNode))
+                    capacity=self._energy(t, i, j-1)
             )
             self.G.add_edge(currentNode, backwardNode, capacity=float('inf'))
-
+        '''
         upwardNode = self._getUpwardNode(t, i, j) # 注意！这条边在原论文是没有的！
         if upwardNode is not None:
-            energy = self.Energy(self.Node2Img(upwardNode), self.Node2Img(currentNode))
+            energy = L1Norm(self.Node2Img(upwardNode), self.Node2Img(currentNode))
             self.G.add_edge(upwardNode, currentNode, 
-                    capacity=energy
+                    capacity=-energy
             )
             self.G.add_edge(currentNode, upwardNode, 
                     capacity=energy
             )
-        
+        '''
         for diagonalNode in self._getDiagonalNodes(t, i, j):
             self.G.add_edge(currentNode, diagonalNode, capacity=float('inf'))
 
@@ -115,12 +114,12 @@ class VideoSeamCarver():
         if backwardNode is not None:
             self.G.remove_edge(backwardNode, currentNode)
             self.G.remove_edge(currentNode, backwardNode)
-
+        '''
         upwardNode = self._getUpwardNode(t, i, j) # 注意！这条边在原论文是没有的！
         if upwardNode is not None:
             self.G.remove_edge(upwardNode, currentNode)
             self.G.remove_edge(currentNode, upwardNode)
-
+        '''
         for diagonalNode in self._getDiagonalNodes(t, i, j):
             self.G.remove_edge(currentNode, diagonalNode)
 
@@ -170,6 +169,14 @@ class VideoSeamCarver():
         Flattens a 2-D (In frame and row directions) Seam
         '''
         return list(itertools.chain(*seam))
+
+    def _energy(self, t, i, j):
+        left = j-1 if j-1>=0 else j
+        right = j+1 if j+1<len(self.Pos2Node[t][i]) else j
+        up = i-1 if i-1>=0 else i
+        down = i+1 if i+1<len(self.Pos2Node[t]) else i
+        return L1Norm(self.Pos2Img(t, i, left), self.Pos2Img(t, i, right)) / (right-left) +\
+               L1Norm(self.Pos2Img(t, up, j), self.Pos2Img(t, down, j)) / (down-up)
 
     def Solve(self):
         '''根据当前Graph结构，返回最小割'''
@@ -386,7 +393,7 @@ if __name__ == '__main__':
     assert XY_SCALE_TEST + REMOVE_SEAM_TEST + AUGMENT_SEAM_TEST == 1, "Wrong setting!"
 
     REMOVE_SEAMS_COUNT  = 40
-    AUGMENT_SEAMS_COUNT = 80
+    AUGMENT_SEAMS_COUNT = 40
     X_SEAMS_COUNT       = 20
     Y_SEAMS_COUNT       = -13
     
