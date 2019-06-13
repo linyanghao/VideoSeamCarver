@@ -94,7 +94,7 @@ class VideoSeamCarver():
         if upwardNode is not None:
             energy = self.Energy(self.Node2Img(upwardNode), self.Node2Img(currentNode))
             self.G.add_edge(upwardNode, currentNode, 
-                    capacity=-energy
+                    capacity=energy
             )
             self.G.add_edge(currentNode, upwardNode, 
                     capacity=energy
@@ -379,14 +379,14 @@ class VideoSeamCarver():
 if __name__ == '__main__':
     IMAGE_AS_VIDEO, SMALL_DATA = True, False
 
-    REMOVE_SEAM_TEST  = True
-    AUGMENT_SEAM_TEST = False
+    REMOVE_SEAM_TEST  = False
+    AUGMENT_SEAM_TEST = True
     XY_SCALE_TEST     = False
 
     assert XY_SCALE_TEST + REMOVE_SEAM_TEST + AUGMENT_SEAM_TEST == 1, "Wrong setting!"
 
-    REMOVE_SEAMS_COUNT  = 5
-    AUGMENT_SEAMS_COUNT = 40
+    REMOVE_SEAMS_COUNT  = 40
+    AUGMENT_SEAMS_COUNT = 80
     X_SEAMS_COUNT       = 20
     Y_SEAMS_COUNT       = -13
     
