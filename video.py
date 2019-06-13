@@ -341,17 +341,17 @@ class VideoSeamCarver():
         plt.imshow(imgWithSeam)
         plt.show()
 
-    def shrink_hor(self, rm_count, save_hist=False):
+    def shrink_hor(self, rm_count, save_hist=False, want_trans=False):
         # videos = []
         for i in range(rm_count):
-            print(i)
+            # print(i)
             startTime = time.time()
             seam      = self.Solve()    
 
             # Image with removed seam highlighted
             if save_hist:
                 video_w_seam = self.GenerateVideoWithSeam(seam)
-                imageio.mimsave(OUT_FOLDER+'/%s.gif' % i, video_w_seam)
+                imageio.mimsave(OUT_FOLDER+'/%s.gif' % i, video_w_seam if not want_trans else self.trans(video_w_seam))
                 # videos.append(video_w_seam)
             
             self.RemoveSeam(seam)
@@ -363,12 +363,12 @@ class VideoSeamCarver():
         return videoAugmented
 
     # Horizontal augmentation
-    def augment_hor(self, aug_count, save_hist=True):
+    def augment_hor(self, aug_count, save_hist=True, want_trans=False):
         seams = self.SolveK(aug_count)
 
         if save_hist:
             videoWithSeams = self.GenerateVideoWithSeams(seams)
-            imageio.mimsave(OUT_FOLDER+'/videoWithSeams.gif', videoWithSeams)
+            imageio.mimsave(OUT_FOLDER+'/videoWithSeams.gif', videoWithSeams if not want_trans else self.trans(videoWithSeams))
 
         for seam in seams:
             self.AugmentSeam(seam)
@@ -377,6 +377,9 @@ class VideoSeamCarver():
         imageio.mimsave(OUT_FOLDER+'/videoAugmented.gif', videoAugmented)
         return videoAugmented
         
+    def trans(self, video):
+        return np.transpose(video, (0,2,1,3))
+
     def scale_hor(self, pix_count, save_hist=False):
         if pix_count == 0:
             raise ValueError("VideoSeamCarver::scale_hor does not take pix_count=0") 
@@ -385,6 +388,7 @@ class VideoSeamCarver():
             return self.shrink_hor(-pix_count, save_hist)
         elif pix_count > 0:
             return self.augment_hor(pix_count, save_hist)
+    
     
 
 if __name__ == '__main__':
