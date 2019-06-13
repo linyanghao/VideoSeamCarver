@@ -282,6 +282,7 @@ class VideoSeamCarver():
                         for row in frame]
                         for frame in self.Pos2Node])
         return video
+
     def ShowImg(self, seam, numCols):
         raise NotImplementedError()
         imgWithSeam = self.GenerateImgWithSeam(seam, numCols)
@@ -289,16 +290,72 @@ class VideoSeamCarver():
         plt.imshow(imgWithSeam)
         plt.show()
 
+    def shrink_hor(self, rm_count, save_hist=False):
+        # videos = []
+        for i in range(rm_count):
+            print(i)
+            startTime = time.time()
+            seam      = self.Solve()    
+
+            # Image with removed seam highlighted
+            if save_hist:
+                video_w_seam = self.GenerateVideoWithSeam(seam)
+                imageio.mimsave(OUT_FOLDER+'/%s.gif' % i, video_w_seam)
+                # videos.append(video_w_seam)
+            
+            self.RemoveSeam(seam)
+            print('Total Time Removing Seam %s/%s: %s seconds' % (i, rm_count, time.time()-startTime))
+
+        videoAugmented = self.GenerateVideo()
+        # Save the final image
+        imageio.mimsave(OUT_FOLDER+'/result.gif', videoAugmented)
+        return videoAugmented
+
+    # Horizontal augmentation
+    def augment_hor(self, aug_count, save_hist=False):
+        seams = self.SolveK(aug_count)
+
+        if save_hist:
+            videoWithSeams = self.GenerateVideoWithSeams(seams)
+            imageio.mimsave(OUT_FOLDER+'/videoWithSeams.gif', videoWithSeams)
+
+        for seam in seams:
+            self.AugmentSeam(seam)
+
+        videoAugmented = self.GenerateVideo()
+        imageio.mimsave(OUT_FOLDER+'/videoAugmented.gif', videoAugmented)
+        return videoAugmented
+        
+    def scale_hor(self, pix_count, save_hist=False):
+        if pix_count == 0:
+            raise ValueError("VideoSeamCarver::scale_hor does not take pix_count=0") 
+        
+        if pix_count < 0:
+            return self.shrink_hor(-pix_count, save_hist)
+        elif pix_count > 0:
+            return self.augment_hor(pix_count, save_hist)
+    
+
 if __name__ == '__main__':
-    IMAGE_AS_VIDEO, SMALL_DATA, REMOVE_SEAM_TEST, AUGMENT_SEAM_TEST = True, False, False, True
-    REMOVE_SEAMS_COUNT = 40
-    AUGMENT_SEAMS_COUNT = 40
+    IMAGE_AS_VIDEO, SMALL_DATA = True, False
+
+    REMOVE_SEAM_TEST  = False
+    AUGMENT_SEAM_TEST = False
+    XY_SCALE_TEST     = True
+
+    assert XY_SCALE_TEST + REMOVE_SEAM_TEST + AUGMENT_SEAM_TEST == 1, "Wrong setting!"
+
+    REMOVE_SEAMS_COUNT  = 1
+    AUGMENT_SEAMS_COUNT = 2
+    X_SEAMS_COUNT       = 20
+    Y_SEAMS_COUNT       = -13
     
     if IMAGE_AS_VIDEO:
         img   = Image.open('2.png')
         img   = img.convert('RGB')
         img   = np.array(img)
         video = np.reshape(img, [1, *img.shape])
+        print(video.shape)
     else:
         video = imageio.get_reader('golf.mov', 'ffmpeg')
         frames = []
@@ -312,29 +369,28 @@ if __name__ == '__main__':
     #carver.Draw()
 
     if REMOVE_SEAM_TEST: # 测试减少图片宽度的功能
-        videos = []
-        for i in range(REMOVE_SEAMS_COUNT):
-            print(i)
-            startTime = time.time()
-            seam      = carver.Solve()
-            #carver.ShowImg(seam)
-            video = carver.GenerateVideoWithSeam(seam)
-            imageio.mimsave(OUT_FOLDER+'/%s.gif'% i, video)
-            videos.append(video)
-            carver.RemoveSeam(seam)
-            print('Total Time Removing Seam %s/%s: %s seconds'% (i, REMOVE_SEAMS_COUNT, time.time()-startTime))
-        video = carver.GenerateVideo()
-        imageio.mimsave(OUT_FOLDER+'/result.gif', video)
-        
-        #carver.ShowImg(None)
+       res = carver.shrink_hor(REMOVE_SEAMS_COUNT)
+       assert res.shape[2] == video.shape[2] - REMOVE_SEAMS_COUNT, "{} is not {}".format(
+           res.shape[2], video.shape[2] - REMOVE_SEAMS_COUNT
+       )
 
     if AUGMENT_SEAM_TEST: # 测试增加图片宽度的功能
-        seams          = carver.SolveK(AUGMENT_SEAMS_COUNT)
-        videoWithSeams = carver.GenerateVideoWithSeams(seams)
-        imageio.mimsave(OUT_FOLDER+'/videoWithSeams.gif', videoWithSeams)
+       res = carver.augment_hor(AUGMENT_SEAMS_COUNT)
+       assert res.shape[2] == video.shape[2] + AUGMENT_SEAMS_COUNT, "{} is not {}".format(
+           res.shape[2], video.shape[2] + AUGMENT_SEAMS_COUNT
+       )
 
-        for seam in seams:
-            carver.AugmentSeam(seam)
-        videoAugmented = carver.GenerateVideo()
-        
-        imageio.mimsave(OUT_FOLDER+'/videoAugmented.gif', videoAugmented)
+    if XY_SCALE_TEST:
+        print("=========== XY_SCALE_TEST ==============\n")
+        print("=========== {} =========".format(
+            "Shrink X" if X_SEAMS_COUNT < 0 else "Augment X"
+        ))
+        x_scaled_video = carver.scale_hor(X_SEAMS_COUNT, save_hist=True)
+        x_scaled_trans = np.transpose(x_scaled_video, (0,2,1,3))
+
+        print("=========== {} =========".format(
+            "Shrink Y" if Y_SEAMS_COUNT < 0 else "Augment Y"
+        ))
+        y_scaler = VideoSeamCarver(x_scaled_trans)
+        res = y_scaler.scale_hor(Y_SEAMS_COUNT, save_hist=True)
+
