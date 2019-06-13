@@ -289,9 +289,9 @@ class VideoSeamCarver():
         plt.imshow(imgWithSeam)
         plt.show()
 
-    def shrink_hor(self, rm_cournt, save_hist=False):
+    def shrink_hor(self, rm_count, save_hist=False):
         # videos = []
-        for i in range(rm_cournt):
+        for i in range(rm_count):
             print(i)
             startTime = time.time()
             seam      = self.Solve()    
@@ -303,24 +303,38 @@ class VideoSeamCarver():
             # videos.append(video_w_seam)
             
             self.RemoveSeam(seam)
-            print('Total Time Removing Seam %s/%s: %s seconds' % (i, rm_cournt, time.time()-startTime))
+            print('Total Time Removing Seam %s/%s: %s seconds' % (i, rm_count, time.time()-startTime))
 
         shrinked_video = self.GenerateVideo()
         # Save the final image
         imageio.mimsave(OUT_FOLDER+'/result.gif', shrinked_video)
         return shrinked_video
 
+    # Horizontal augmentation
+    def augment_hor(self, aug_count, save_hist=False):
+        seams = self.SolveK(AUGMENT_SEAMS_COUNT)
+        if save_hist:
+            videoWithSeams = self.GenerateVideoWithSeams(seams)
+            imageio.mimsave(OUT_FOLDER+'/videoWithSeams.gif', videoWithSeams)
+
+        for seam in seams:
+            self.AugmentSeam(seam)
+
+        videoAugmented = self.GenerateVideo()
+        imageio.mimsave(OUT_FOLDER+'/videoAugmented.gif', videoAugmented)
+        return videoAugmented
+
 if __name__ == '__main__':
     IMAGE_AS_VIDEO, SMALL_DATA = True, False
 
-    REMOVE_SEAM_TEST  = True
-    AUGMENT_SEAM_TEST = False
+    REMOVE_SEAM_TEST  = False
+    AUGMENT_SEAM_TEST = True
     XY_SCALE_TEST     = False
 
     assert XY_SCALE_TEST + REMOVE_SEAM_TEST + AUGMENT_SEAM_TEST == 1, "Wrong setting!"
 
     REMOVE_SEAMS_COUNT  = 1
-    AUGMENT_SEAMS_COUNT = 40
+    AUGMENT_SEAMS_COUNT = 2
     X_SEAMS_COUNT       = 30
     Y_SEAMS_COUNT       = -13
     
@@ -329,6 +343,7 @@ if __name__ == '__main__':
         img   = img.convert('RGB')
         img   = np.array(img)
         video = np.reshape(img, [1, *img.shape])
+        print(video.shape)
     else:
         video = imageio.get_reader('golf.mov', 'ffmpeg')
         frames = []
@@ -342,18 +357,16 @@ if __name__ == '__main__':
     #carver.Draw()
 
     if REMOVE_SEAM_TEST: # 测试减少图片宽度的功能
-       carver.shrink_hor(10)
+       res = carver.shrink_hor(REMOVE_SEAMS_COUNT)
+       assert res.shape[2] == video.shape[2] - REMOVE_SEAMS_COUNT, "{} is not {}".format(
+           res.shape[2], video.shape[2] - REMOVE_SEAMS_COUNT
+       )
 
     if AUGMENT_SEAM_TEST: # 测试增加图片宽度的功能
-        seams          = carver.SolveK(AUGMENT_SEAMS_COUNT)
-        videoWithSeams = carver.GenerateVideoWithSeams(seams)
-        imageio.mimsave(OUT_FOLDER+'/videoWithSeams.gif', videoWithSeams)
-
-        for seam in seams:
-            carver.AugmentSeam(seam)
-        videoAugmented = carver.GenerateVideo()
-        
-        imageio.mimsave(OUT_FOLDER+'/videoAugmented.gif', videoAugmented)
+       res = carver.augment_hor(AUGMENT_SEAMS_COUNT)
+       assert res.shape[2] == video.shape[2] + AUGMENT_SEAMS_COUNT, "{} is not {}".format(
+           res.shape[2], video.shape[2] + AUGMENT_SEAMS_COUNT
+       )
 
     if XY_SCALE_TEST:
-        pass
+        raise NotImplementedError()
