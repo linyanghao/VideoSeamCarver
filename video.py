@@ -289,6 +289,24 @@ class VideoSeamCarver():
         plt.imshow(imgWithSeam)
         plt.show()
 
+    def shrink_hor(self, rm_cournt):
+        videos = []
+        for i in range(rm_cournt):
+            print(i)
+            startTime = time.time()
+            seam      = self.Solve()
+            video = self.GenerateVideoWithSeam(seam)
+
+            # Image with removed seam highlighted
+            imageio.mimsave(OUT_FOLDER+'/%s.gif'% i, video)
+            videos.append(video)
+            self.RemoveSeam(seam)
+            print('Total Time Removing Seam %s/%s: %s seconds' % (i, rm_cournt, time.time()-startTime))
+        video = self.GenerateVideo()
+        # Save the final image
+        imageio.mimsave(OUT_FOLDER+'/result.gif', video)
+        return video
+
 if __name__ == '__main__':
     IMAGE_AS_VIDEO, SMALL_DATA = True, False
 
@@ -321,21 +339,7 @@ if __name__ == '__main__':
     #carver.Draw()
 
     if REMOVE_SEAM_TEST: # 测试减少图片宽度的功能
-        videos = []
-        for i in range(REMOVE_SEAMS_COUNT):
-            print(i)
-            startTime = time.time()
-            seam      = carver.Solve()
-            #carver.ShowImg(seam)
-            video = carver.GenerateVideoWithSeam(seam)
-            imageio.mimsave(OUT_FOLDER+'/%s.gif'% i, video)
-            videos.append(video)
-            carver.RemoveSeam(seam)
-            print('Total Time Removing Seam %s/%s: %s seconds'% (i, REMOVE_SEAMS_COUNT, time.time()-startTime))
-        video = carver.GenerateVideo()
-        imageio.mimsave(OUT_FOLDER+'/result.gif', video)
-        
-        #carver.ShowImg(None)
+       carver.shrink_hor(10)
 
     if AUGMENT_SEAM_TEST: # 测试增加图片宽度的功能
         seams          = carver.SolveK(AUGMENT_SEAMS_COUNT)
