@@ -89,6 +89,16 @@ class VideoSeamCarver():
                     capacity=self.Energy(self.Node2Img(backwardNode), self.Node2Img(currentNode))
             )
             self.G.add_edge(currentNode, backwardNode, capacity=float('inf'))
+
+        upwardNode = self._getUpwardNode(t, i, j) # 注意！这条边在原论文是没有的！
+        if upwardNode is not None:
+            energy = self.Energy(self.Node2Img(upwardNode), self.Node2Img(currentNode))
+            self.G.add_edge(upwardNode, currentNode, 
+                    capacity=-energy)
+            )
+            self.G.add_edge(currentNode, upwardNode, 
+                    capacity=energy)
+            )
         
         for diagonalNode in self._getDiagonalNodes(t, i, j):
             self.G.add_edge(currentNode, diagonalNode, capacity=float('inf'))
@@ -105,9 +115,20 @@ class VideoSeamCarver():
         if backwardNode is not None:
             self.G.remove_edge(backwardNode, currentNode)
             self.G.remove_edge(currentNode, backwardNode)
-        
+
+        upwardNode = self._getUpwardNode(t, i, j) # 注意！这条边在原论文是没有的！
+        if upwardNode is not None:
+            self.G.remove_edge(upwardNode, currentNode)
+            self.G.remove_edge(currentNode, upwardNode)
+
         for diagonalNode in self._getDiagonalNodes(t, i, j):
             self.G.remove_edge(currentNode, diagonalNode)
+
+    def _getUpwardNode(self, t, i, j):
+        if i > 0:
+            return self.Pos2Node[t][i-1][j]
+        else:
+            return None
 
     def _getBackwardNode(self, t, i, j):
         if j > 0:
