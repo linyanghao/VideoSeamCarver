@@ -225,7 +225,7 @@ class VideoSeamCarver():
                             break
             seams.append(seam)
             print('Solving seam %s/%s: %s seconds'% (_+1, k, time.time()-startTime))
-        return seams
+        return sorted(seams, key=lambda seam:seam[0][0][2], reverse=True) # t=0, i=0 处，j最大的优先
     
     def RemoveSeam(self, seam):
         '''削除Seam处的一列像素，并对Graph结构进行更新'''
