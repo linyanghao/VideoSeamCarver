@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import igraph as ig 
+import igraph.vendor.texttable
 
 
 def minimum_cut(G, S_Node, T_Node):
