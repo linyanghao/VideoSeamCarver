@@ -47,13 +47,13 @@ class TabDemo(QTabWidget):
         self.tab1.textEdit = QLineEdit()
         self.tab1.FileButton = QPushButton("Open File")
         self.tab1.OKButton = QPushButton("OK")
-        self.tab1.Cancle = QPushButton("Cancle")
+        self.tab1.Cancel = QPushButton("Cancel")
         hbox = QHBoxLayout()
         vbox = QVBoxLayout()
         hbox.addWidget(self.tab1.textEdit)
         hbox.addWidget(self.tab1.FileButton)
         hbox.addWidget(self.tab1.OKButton)
-        hbox.addWidget(self.tab1.Cancle)
+        hbox.addWidget(self.tab1.Cancel)
         hbox.addStretch(1)
         hbox1 = QHBoxLayout()
         self.tab1.textEdit1 = QLineEdit()
@@ -85,7 +85,7 @@ class TabDemo(QTabWidget):
         self.setTabText(0,"image seam carver")
         self.tab1.FileButton.clicked.connect(self.showDialog)
         self.tab1.OKButton.clicked.connect(self.showImg)
-        self.tab1.Cancle.clicked.connect(self.cleartext)
+        self.tab1.Cancel.clicked.connect(self.cleartext)
         self.tab1.functionButton.clicked.connect(self.seamer)
     
     def object_remove(self):
@@ -109,7 +109,7 @@ class TabDemo(QTabWidget):
         uy = point1[1]
         bx = point2[0]
         by = point2[1]
-        self.tab2.inforEdit.setText("Please waiting")
+        self.tab2.inforEdit.setText("Please wait")
         IMAGE_AS_VIDEO, SMALL_DATA = True, False
         print(uy)
         print(by)
@@ -242,7 +242,7 @@ class TabDemo(QTabWidget):
         保存结果在本地
         然后在self.tab3.l2中显示以动图形式显示
         """
-        self.tab3.inforEdit1.setText("Please waiting")
+        self.tab3.inforEdit1.setText("Please wait")
         IMAGE_AS_VIDEO, SMALL_DATA = False, False
 
         REMOVE_SEAM_TEST  = False
@@ -343,7 +343,7 @@ class TabDemo(QTabWidget):
     def cleartext(self):
         """消除文本框"""
         sender = self.sender()
-        if sender == self.tab1.Cancle:
+        if sender == self.tab1.Cancel:
             self.tab1.textEdit.clear()
         else:
             self.tab2.textEdit.clear()
@@ -362,13 +362,13 @@ class TabDemo(QTabWidget):
         self.tab2.textEdit = QLineEdit()
         self.tab2.FileButton = QPushButton("Open File")
         self.tab2.OKButton = QPushButton("OK")
-        self.tab2.Cancle = QPushButton("Cancle")
+        self.tab2.Cancel = QPushButton("Cancel")
         hbox = QHBoxLayout()
         vbox = QVBoxLayout()
         hbox.addWidget(self.tab2.textEdit)
         hbox.addWidget(self.tab2.FileButton)
         hbox.addWidget(self.tab2.OKButton)
-        hbox.addWidget(self.tab2.Cancle)
+        hbox.addWidget(self.tab2.Cancel)
         hbox.addStretch(1)
         hbox1 = QHBoxLayout()
         self.tab2.functionButton = QPushButton("Object Remove")
@@ -397,7 +397,7 @@ class TabDemo(QTabWidget):
         self.tab2.l1.clicked.connect(self.addPoints)
         self.tab2.FileButton.clicked.connect(self.showDialog)
         self.tab2.OKButton.clicked.connect(self.showImg)
-        self.tab2.Cancle.clicked.connect(self.cleartext)
+        self.tab2.Cancel.clicked.connect(self.cleartext)
         self.tab2.functionButton.clicked.connect(self.object_remove)
         self.tab2.clearButton.clicked.connect(self.clearPoint)
         
@@ -409,13 +409,13 @@ class TabDemo(QTabWidget):
         self.tab3.textEdit3 = QLineEdit()
         self.tab3.FileButton1 = QPushButton("Open File")
         self.tab3.OKButton1 = QPushButton("OK")
-        self.tab3.Cancle1 = QPushButton("Cancle")
+        self.tab3.Cancel1 = QPushButton("Cancel")
         hbox = QHBoxLayout()
         vbox = QVBoxLayout()
         hbox.addWidget(self.tab3.textEdit3)
         hbox.addWidget(self.tab3.FileButton1)
         hbox.addWidget(self.tab3.OKButton1)
-        hbox.addWidget(self.tab3.Cancle1)
+        hbox.addWidget(self.tab3.Cancel1)
         hbox.addStretch(1)
         hbox1 = QHBoxLayout()
         self.tab3.textEdit4 = QLineEdit()
@@ -446,7 +446,7 @@ class TabDemo(QTabWidget):
         self.tab3.setLayout(vbox)
         self.tab3.FileButton1.clicked.connect(self.showDialog1)
         self.tab3.OKButton1.clicked.connect(self.showVideo)
-        self.tab3.Cancle1.clicked.connect(self.cleartext1)
+        self.tab3.Cancel1.clicked.connect(self.cleartext1)
         self.tab3.functionButton1.clicked.connect(self.seamer_video)
         self.setTabText(2,"video seam carver")
     #退出设置
