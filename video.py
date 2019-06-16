@@ -384,7 +384,7 @@ class VideoSeamCarver():
 
     def scale_hor(self, pix_count, save_hist=False):
         if pix_count == 0:
-            raise ValueError("VideoSeamCarver::scale_hor does not take pix_count=0") 
+            return self.GenerateVideo()
         
         if pix_count < 0:
             return self.shrink_hor(-pix_count, save_hist)
