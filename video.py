@@ -11,6 +11,7 @@ from copy import deepcopy
 import imageio
 import time
 import os
+import sys
 
 images = []
 
@@ -58,18 +59,21 @@ class VideoSeamCarver():
 
     def _initializeGraph(self):
         startTime = time.time()
-
+        print('Graph Initialization start')
         self.G      = nx.DiGraph()
         self.S_Node = 'S'
         self.T_Node = 'T'
         self.G.add_nodes_from([self.S_Node, self.T_Node])
 
         for j in range(self.numCols):
+            sys.stdout.write('Graph Initialization progress: %s/%s \r' % (j, self.numCols))
+            sys.stdout.flush()
             for t in range(self.numFrames):
                 for i in range(self.numRows):
                     currentNode = self.Pos2Node[t][i][j]
                     self.G.add_node(currentNode)
                     self._addEdges(t, i, j)
+        print('Flushing to iGraph...')
         self.G.flush()
         print('Graph Initialization took %s seconds' % (time.time()-startTime))
                 
