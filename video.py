@@ -397,8 +397,8 @@ if __name__ == '__main__':
     IMAGE_AS_VIDEO, SMALL_DATA = True, False
 
     REMOVE_SEAM_TEST  = False
-    AUGMENT_SEAM_TEST = False
-    XY_SCALE_TEST     = True
+    AUGMENT_SEAM_TEST = True
+    XY_SCALE_TEST     = False
 
     assert XY_SCALE_TEST + REMOVE_SEAM_TEST + AUGMENT_SEAM_TEST == 1, "Wrong setting!"
 
@@ -408,7 +408,7 @@ if __name__ == '__main__':
     Y_SEAMS_COUNT       = 60
     
     if IMAGE_AS_VIDEO:
-        img   = Image.open('2.png')
+        img   = Image.open('dolphin.png')
         img   = img.convert('RGB')
         img   = np.array(img)
         video = np.reshape(img, [1, *img.shape])
@@ -441,7 +441,19 @@ if __name__ == '__main__':
 
     if AUGMENT_SEAM_TEST: # 测试增加图片宽度的功能
         print("=========== AUGMENT_SEAM_TEST ==============\n")
-        res = carver.augment_hor(AUGMENT_SEAMS_COUNT)
+        frames = []
+        seams = carver.SolveK(AUGMENT_SEAMS_COUNT)
+        video_w_seams = carver.GenerateVideoWithSeams(seams)
+        imageio.mimsave(OUT_FOLDER + "/dolphin_seams.gif", video_w_seams)
+        for seam in seams:
+            video_w_seam = carver.GenerateVideoWithSeam(seam)
+            frames.append(video_w_seam[0])
+            carver.AugmentSeam(seam)
+        blank = np.asarray([[carver.PALETTE['black'] for j in range(AUGMENT_SEAMS_COUNT)] for i in range(carver.numRows)])
+        print(blank.shape)
+        print(frames[0].shape)
+        frames[0] = np.concatenate([frames[0], blank], axis=1)
+        imageio.mimsave(OUT_FOLDER + "/dolphin_augment_movie.gif", frames)
         assert res.shape[2] == video.shape[2] + AUGMENT_SEAMS_COUNT, "{} is not {}".format(
             res.shape[2], video.shape[2] + AUGMENT_SEAMS_COUNT
         )
