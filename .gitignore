@@ -4,3 +4,6 @@ env
 out/*
 result/*
 *.pyc
+build/*
+dist/*
+*.spec
